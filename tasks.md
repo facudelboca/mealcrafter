@@ -18,12 +18,12 @@ cada fase debe quedar funcional antes de pasar a la siguiente.
 
 ## Fase 1 — Modelo de datos (design.md §2)
 
-- [ ] 1.1 Crear el schema/migraciones para las tablas: `ingredient`,
+- [x] 1.1 Crear el schema/migraciones para las tablas: `ingredient`,
       `unit_conversion`, `recipe`, `recipe_ingredient`, `meal_plan`,
       `meal_plan_entry`, con los campos y constraints de design.md §2.2.
-- [ ] 1.2 Correr la migración inicial contra la DB local y verificar que
+- [x] 1.2 Correr la migración inicial contra la DB local y verificar que
       las tablas se crean correctamente.
-- [ ] 1.3 Escribir un script de seed con 5-10 ingredientes comunes
+- [x] 1.3 Escribir un script de seed con 5-10 ingredientes comunes
       (papa, carne, cebolla, etc.) y sus `unit_conversion` básicas, para
       poder probar el resto de las fases sin cargar todo a mano.
 

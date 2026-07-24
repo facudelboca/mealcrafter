@@ -1,13 +1,108 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum BaseUnit {
+  g
+  ml
+  unidad
+}
+
+enum MealType {
+  almuerzo
+  cena
+  ambos
+}
+
+enum EntryMealType {
+  almuerzo
+  cena
+}
+
+enum DayOfWeek {
+  lunes
+  martes
+  miercoles
+  jueves
+  viernes
+  sabado
+  domingo
+}
+
+model Ingredient {
+  id                Int                @id @default(autoincrement())
+  nombre            String             @unique
+  unidad_base       BaseUnit
+  conversions       UnitConversion[]
+  recipeIngredients RecipeIngredient[]
+
+  @@map("ingredient")
+}
+
+model UnitConversion {
+  id            Int        @id @default(autoincrement())
+  ingredient_id Int
+  unidad_origen String
+  factor_a_base Decimal    @db.Decimal(10, 4)
+  ingredient    Ingredient @relation(fields: [ingredient_id], references: [id], onDelete: Cascade)
+
+  @@map("unit_conversion")
+}
+
+model Recipe {
+  id                     Int                @id @default(autoincrement())
+  nombre                 String
+  porciones_base         Int
+  tipo_comida            MealType
+  tiempo_preparacion_min Int?
+  instrucciones          String
+  created_at             DateTime           @default(now())
+  ingredients            RecipeIngredient[]
+  mealPlanEntries        MealPlanEntry[]
+
+  @@map("recipe")
+}
+
+model RecipeIngredient {
+  id            Int        @id @default(autoincrement())
+  recipe_id     Int
+  ingredient_id Int
+  cantidad      Decimal    @db.Decimal(10, 4)
+  unidad        String
+  recipe        Recipe     @relation(fields: [recipe_id], references: [id], onDelete: Cascade)
+  ingredient    Ingredient @relation(fields: [ingredient_id], references: [id], onDelete: Cascade)
+
+  @@map("recipe_ingredient")
+}
+
+model MealPlan {
+  id           Int             @id @default(autoincrement())
+  nombre       String?
+  fecha_inicio DateTime        @db.Date
+  entries      MealPlanEntry[]
+
+  @@map("meal_plan")
+}
+
+model MealPlanEntry {
+  id           Int           @id @default(autoincrement())
+  meal_plan_id Int
+  dia          DayOfWeek
+  tipo_comida  EntryMealType
+  recipe_id    Int?
+  comensales   Int
+  mealPlan     MealPlan      @relation(fields: [meal_plan_id], references: [id], onDelete: Cascade)
+  recipe       Recipe?       @relation(fields: [recipe_id], references: [id], onDelete: SetNull)
+
+  @@unique([meal_plan_id, dia, tipo_comida])
+  @@map("meal_plan_entry")
 }
