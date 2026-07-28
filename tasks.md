@@ -29,12 +29,12 @@ cada fase debe quedar funcional antes de pasar a la siguiente.
 
 ## Fase 2 — Catálogo de ingredientes (Requirement 4.1)
 
-- [ ] 2.1 Endpoint `GET /api/ingredients` — listar catálogo.
-- [ ] 2.2 Endpoint `POST /api/ingredients` — crear ingrediente
+- [x] 2.1 Endpoint `GET /api/ingredients` — listar catálogo.
+- [x] 2.2 Endpoint `POST /api/ingredients` — crear ingrediente
       (nombre + unidad_base).
-- [ ] 2.3 Endpoint `POST /api/ingredients/:id/conversions` — agregar
+- [x] 2.3 Endpoint `POST /api/ingredients/:id/conversions` — agregar
       factor de conversión.
-- [ ] 2.4 Validación: no permitir dos ingredientes con el mismo nombre
+- [x] 2.4 Validación: no permitir dos ingredientes con el mismo nombre
       (case-insensitive).
 
 ## Fase 3 — Recetas (Requirements 1.1, 1.2, 1.3)
