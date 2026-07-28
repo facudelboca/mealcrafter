@@ -1,9 +1,9 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const ingredientsController = require('../controllers/ingredients');
+import { getIngredients, createIngredient, addConversion } from '../controllers/ingredients.js';
 
-router.get('/', ingredientsController.getIngredients);
-router.post('/', ingredientsController.createIngredient);
-router.post('/:id/conversions', ingredientsController.addConversion);
+router.get('/', getIngredients);
+router.post('/', createIngredient);
+router.post('/:id/conversions', addConversion);
 
-module.exports = router;
+export default router;

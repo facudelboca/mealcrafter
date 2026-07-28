@@ -1,6 +1,7 @@
-const { Pool } = require('pg');
-const { PrismaPg } = require('@prisma/adapter-pg');
-const { PrismaClient } = require('./generated/prisma/client.ts');
+import 'dotenv/config';
+import { Pool } from 'pg';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from './generated/prisma/client.ts';
 
 // Use pg Pool to manage database connections
 const pool = new Pool({
@@ -15,4 +16,4 @@ const prisma = new PrismaClient({
   log: ['query', 'info', 'warn', 'error'],
 });
 
-module.exports = prisma;
+export default prisma;

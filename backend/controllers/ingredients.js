@@ -1,4 +1,4 @@
-const prisma = require('../prismaClient');
+import prisma from '../prismaClient.js';
 
 // GET /api/ingredients
 // List all ingredients with their conversions
@@ -135,7 +135,7 @@ const addConversion = async (req, res, next) => {
   }
 };
 
-module.exports = {
+export {
   getIngredients,
   createIngredient,
   addConversion,

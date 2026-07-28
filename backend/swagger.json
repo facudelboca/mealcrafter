@@ -1,0 +1,672 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "MealCrafter API Documentation",
+    "version": "1.0.0",
+    "description": "API for recipes, weekly meal planning, and shopping list generation."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local development server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Ingredients",
+      "description": "Operations to manage the catalog of ingredients and their unit conversions"
+    },
+    {
+      "name": "Recipes",
+      "description": "Operations to create, search, and update recipes with nested ingredients"
+    },
+    {
+      "name": "Meal Plans",
+      "description": "Operations for weekly menu scheduling and shopping list calculations"
+    }
+  ],
+  "paths": {
+    "/api/ingredients": {
+      "get": {
+        "tags": ["Ingredients"],
+        "summary": "List all ingredients in the catalog",
+        "description": "Returns a list of all ingredients sorted alphabetically, including their unit conversions.",
+        "responses": {
+          "200": {
+            "description": "List of ingredients",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Ingredient"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Ingredients"],
+        "summary": "Create a new ingredient in the catalog",
+        "description": "Creates a new ingredient with a unique name and canonical base unit.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["nombre", "unidad_base"],
+                "properties": {
+                  "nombre": {
+                    "type": "string",
+                    "example": "papa"
+                  },
+                  "unidad_base": {
+                    "type": "string",
+                    "enum": ["g", "ml", "unidad"],
+                    "example": "g"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Ingredient created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ingredient"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or duplicate ingredient name"
+          }
+        }
+      }
+    },
+    "/api/ingredients/{id}/conversions": {
+      "post": {
+        "tags": ["Ingredients"],
+        "summary": "Add or update a unit conversion factor for an ingredient",
+        "description": "Defines how to scale from an alternative origin unit to the ingredient's base unit.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the ingredient",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["unidad_origen", "factor_a_base"],
+                "properties": {
+                  "unidad_origen": {
+                    "type": "string",
+                    "example": "kg"
+                  },
+                  "factor_a_base": {
+                    "type": "number",
+                    "format": "float",
+                    "example": 1000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Conversion factor created or updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitConversion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, or trying to convert to the base unit itself"
+          },
+          "404": {
+            "description": "Ingredient not found"
+          }
+        }
+      }
+    },
+    "/api/recipes": {
+      "get": {
+        "tags": ["Recipes"],
+        "summary": "Search and list recipes",
+        "description": "Returns all recipes, or filters them by name or ingredient name if the query parameter `q` is provided. If no matches are found, it returns an empty list and a contextual message.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Text query to search for",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Recipe"
+                      }
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Recipes"],
+        "summary": "Create a new recipe with nested ingredients",
+        "description": "Creates a recipe. If any of the nested ingredients do not exist in the catalog, they are automatically created.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["nombre", "porciones_base", "tipo_comida", "instrucciones", "ingredients"],
+                "properties": {
+                  "nombre": {
+                    "type": "string",
+                    "example": "Milanesas con puré"
+                  },
+                  "porciones_base": {
+                    "type": "integer",
+                    "example": 4
+                  },
+                  "tipo_comida": {
+                    "type": "string",
+                    "enum": ["almuerzo", "cena", "ambos"],
+                    "example": "almuerzo"
+                  },
+                  "tiempo_preparacion_min": {
+                    "type": "integer",
+                    "nullable": true,
+                    "example": 45
+                  },
+                  "instrucciones": {
+                    "type": "string",
+                    "example": "1. Preparar carne... 2. Hervir papas..."
+                  },
+                  "ingredients": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["nombre", "cantidad", "unidad"],
+                      "properties": {
+                        "nombre": {
+                          "type": "string",
+                          "example": "papa"
+                        },
+                        "cantidad": {
+                          "type": "number",
+                          "example": 1.5
+                        },
+                        "unidad": {
+                          "type": "string",
+                          "example": "kg"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Recipe created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recipe"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or validation error"
+          }
+        }
+      }
+    },
+    "/api/recipes/{id}": {
+      "get": {
+        "tags": ["Recipes"],
+        "summary": "Get recipe detail",
+        "description": "Returns full recipe details including nested ingredients and steps.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the recipe",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recipe details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recipe"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recipe not found"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Recipes"],
+        "summary": "Update an existing recipe",
+        "description": "Edits recipe fields and updates nested ingredients list. Automatically creates new catalog ingredients if any are introduced.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the recipe",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nombre": {
+                    "type": "string"
+                  },
+                  "porciones_base": {
+                    "type": "integer"
+                  },
+                  "tipo_comida": {
+                    "type": "string",
+                    "enum": ["almuerzo", "cena", "ambos"]
+                  },
+                  "tiempo_preparacion_min": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "instrucciones": {
+                    "type": "string"
+                  },
+                  "ingredients": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["nombre", "cantidad", "unidad"],
+                      "properties": {
+                        "nombre": {
+                          "type": "string"
+                        },
+                        "cantidad": {
+                          "type": "number"
+                        },
+                        "unidad": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recipe updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recipe"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or validation error"
+          },
+          "404": {
+            "description": "Recipe not found"
+          }
+        }
+      }
+    },
+    "/api/meal-plans": {
+      "post": {
+        "tags": ["Meal Plans"],
+        "summary": "Create a weekly meal plan",
+        "description": "Creates a meal plan header and automatically generates 14 empty entry slots (7 days x 2 meals: almuerzo/cena) initialized to null recipe.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["fecha_inicio"],
+                "properties": {
+                  "nombre": {
+                    "type": "string",
+                    "example": "Semana del 21/07"
+                  },
+                  "fecha_inicio": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-07-27"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Meal plan created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MealPlan"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid date format or missing required fields"
+          }
+        }
+      }
+    },
+    "/api/meal-plans/{id}": {
+      "get": {
+        "tags": ["Meal Plans"],
+        "summary": "Get meal plan with entries",
+        "description": "Returns the plan and all of its 14 entries sorted chronologically (Lunes Almuerzo to Domingo Cena), including associated recipe details.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the meal plan",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Meal plan details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MealPlan"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Meal plan not found"
+          }
+        }
+      }
+    },
+    "/api/meal-plans/{id}/entries/{entryId}": {
+      "put": {
+        "tags": ["Meal Plans"],
+        "summary": "Assign recipe and diner count to a meal plan slot",
+        "description": "Assigns a recipe and a diner count to an entry. If comensales is not provided, it defaults to the recipe's base servings.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the meal plan",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "entryId",
+            "in": "path",
+            "required": true,
+            "description": "ID of the meal plan entry slot",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "recipe_id": {
+                    "type": "integer",
+                    "nullable": true,
+                    "example": 5
+                  },
+                  "comensales": {
+                    "type": "integer",
+                    "nullable": true,
+                    "example": 6
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Slot updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MealPlanEntry"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (e.g. comensales <= 0, recipe not found)"
+          },
+          "404": {
+            "description": "Meal plan or entry not found"
+          }
+        }
+      }
+    },
+    "/api/meal-plans/{id}/shopping-list": {
+      "get": {
+        "tags": ["Meal Plans"],
+        "summary": "Generate weekly shopping list",
+        "description": "Calculates and returns the aggregated quantities of all ingredients needed for the week. Ingredients are scaled by `comensales / porciones_base`. Compatible units are summed up, while non-convertible items remain isolated.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the meal plan",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calculated shopping list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "ingredient": { "type": "string", "example": "papa" },
+                          "cantidad": { "type": "number", "example": 11550 },
+                          "unidad": { "type": "string", "example": "g" }
+                        }
+                      }
+                    },
+                    "no_convertibles": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "ingredient": { "type": "string", "example": "sal" },
+                          "cantidad": { "type": "number", "example": 2 },
+                          "unidad": { "type": "string", "example": "pizca" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Meal plan not found"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Ingredient": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "nombre": { "type": "string" },
+          "unidad_base": { "type": "string", "enum": ["g", "ml", "unidad"] },
+          "conversions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnitConversion"
+            }
+          }
+        }
+      },
+      "UnitConversion": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "ingredient_id": { "type": "integer" },
+          "unidad_origen": { "type": "string" },
+          "factor_a_base": { "type": "number" }
+        }
+      },
+      "Recipe": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "nombre": { "type": "string" },
+          "porciones_base": { "type": "integer" },
+          "tipo_comida": { "type": "string", "enum": ["almuerzo", "cena", "ambos"] },
+          "tiempo_preparacion_min": { "type": "integer", "nullable": true },
+          "instrucciones": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "ingredients": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "integer" },
+                "recipe_id": { "type": "integer" },
+                "ingredient_id": { "type": "integer" },
+                "cantidad": { "type": "number" },
+                "unidad": { "type": "string" },
+                "ingredient": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "integer" },
+                    "nombre": { "type": "string" },
+                    "unidad_base": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "MealPlan": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "nombre": { "type": "string", "nullable": true },
+          "fecha_inicio": { "type": "string", "format": "date-time" },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MealPlanEntry"
+            }
+          }
+        }
+      },
+      "MealPlanEntry": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "meal_plan_id": { "type": "integer" },
+          "dia": { "type": "string", "enum": ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"] },
+          "tipo_comida": { "type": "string", "enum": ["almuerzo", "cena"] },
+          "recipe_id": { "type": "integer", "nullable": true },
+          "comensales": { "type": "integer" },
+          "recipe": {
+            "$ref": "#/components/schemas/Recipe"
+          }
+        }
+      }
+    }
+  }
+}

@@ -39,72 +39,73 @@ cada fase debe quedar funcional antes de pasar a la siguiente.
 
 ## Fase 3 — Recetas (Requirements 1.1, 1.2, 1.3)
 
-- [ ] 3.1 Endpoint `POST /api/recipes` — crear receta con ingredientes
+- [x] 3.1 Endpoint `POST /api/recipes` — crear receta con ingredientes
       anidados en el body. Si un ingrediente del body no existe en el
       catálogo, crearlo automáticamente (Requirement 1.1, criterio 2).
-- [ ] 3.2 Endpoint `GET /api/recipes/:id` — devolver receta completa con
+- [x] 3.2 Endpoint `GET /api/recipes/:id` — devolver receta completa con
       sus ingredientes y pasos.
-- [ ] 3.3 Endpoint `GET /api/recipes?q=texto` — búsqueda por nombre o
+- [x] 3.3 Endpoint `GET /api/recipes?q=texto` — búsqueda por nombre o
       por nombre de ingrediente (usar `ILIKE` de Postgres o similar).
       Si no hay resultados, devolver `{ results: [], message: "..." }`
       en vez de un array vacío sin contexto (Requirement 1.2).
-- [ ] 3.4 Endpoint `PUT /api/recipes/:id` — editar receta existente.
-- [ ] 3.5 Tests: crear receta, buscarla, verificar que ingredientes
+- [x] 3.4 Endpoint `PUT /api/recipes/:id` — editar receta existente.
+- [x] 3.5 Tests: crear receta, buscarla, verificar que ingredientes
       nuevos se auto-crearon en el catálogo.
 
 ## Fase 4 — Planes semanales (Requirement 2.1, 2.2)
 
-- [ ] 4.1 Endpoint `POST /api/meal-plans` — crear plan (nombre +
+- [x] 4.1 Endpoint `POST /api/meal-plans` — crear plan (nombre +
       fecha_inicio), generando automáticamente las 14 entradas vacías
       (7 días × 2 comidas) en `meal_plan_entry` con `recipe_id = null`.
-- [ ] 4.2 Endpoint `GET /api/meal-plans/:id` — devolver plan con sus 14
+- [x] 4.2 Endpoint `GET /api/meal-plans/:id` — devolver plan con sus 14
       entradas, cada una con receta (si tiene) y comensales.
-- [ ] 4.3 Endpoint `PUT /api/meal-plans/:id/entries/:entryId` — asignar
+- [x] 4.3 Endpoint `PUT /api/meal-plans/:id/entries/:entryId` — asignar
       `recipe_id` y `comensales` a una entrada. Si no se envía
       `comensales`, usar `porciones_base` de la receta como default
       (Requirement 2.1, criterio 2).
-- [ ] 4.4 Validación: `comensales` debe ser > 0 si se asigna receta.
+- [x] 4.4 Validación: `comensales` debe ser > 0 si se asigna receta.
 
 ## Fase 5 — Cálculo de lista de compras (Requirement 3.1)
 
-- [ ] 5.1 Implementar el servicio `calcularListaDeCompras(mealPlanId)`
+- [x] 5.1 Implementar el servicio `calcularListaDeCompras(mealPlanId)`
       siguiendo el pseudocódigo de design.md §3, como función pura y
       testeable, separada del controller HTTP.
-- [ ] 5.2 Endpoint `GET /api/meal-plans/:id/shopping-list` que llama al
+- [x] 5.2 Endpoint `GET /api/meal-plans/:id/shopping-list` que llama al
       servicio y devuelve el JSON de ejemplo de design.md §4.
-- [ ] 5.3 Tests unitarios del servicio con casos:
+- [x] 5.3 Tests unitarios del servicio con casos:
       - dos recetas distintas que comparten un ingrediente convertible
         → deben sumarse en una sola línea
       - un ingrediente sin conversión definida → debe aparecer en
         `no_convertibles`, no sumado incorrectamente
       - una entrada con `comensales` distinto de `porciones_base` →
         verificar que el factor de escala se aplicó bien
-- [ ] 5.4 Verificar tiempo de respuesta (Requirement 3.1, criterio de
+- [x] 5.4 Verificar tiempo de respuesta (Requirement 3.1, criterio de
       performance) con un plan de 14 entradas.
 
 ## Fase 6 — Frontend web
 
-- [ ] 6.1 Vista de búsqueda y listado de recetas (consume Fase 3).
-- [ ] 6.2 Vista de detalle de receta.
-- [ ] 6.3 Vista de plan semanal: grilla de 7 días × 2 comidas, cada
+- [x] 6.1 Vista de búsqueda y listado de recetas (consume Fase 3).
+- [x] 6.2 Vista de detalle de receta.
+- [x] 6.3 Vista de plan semanal: grilla de 7 días × 2 comidas, cada
       celda editable con selector de receta + input de comensales
       (consume Fase 4). Éste es el componente central del
       diferenciador del producto — priorizar que la UX de "cambiar
       comensales de un día puntual" sea rápida (sin recargar toda la
       página).
-- [ ] 6.4 Vista de lista de compras generada a partir del plan (consume
+- [x] 6.4 Vista de lista de compras generada a partir del plan (consume
       Fase 5), con checkboxes para ir tildando ítems comprados
       (Requirement 3.2 — el estado de tildado puede vivir solo en el
       frontend/localStorage en v1, no hace falta persistirlo en el
       backend).
-- [ ] 6.5 Formulario de carga de recetas (para ir poblando la base sin
+- [x] 6.5 Formulario de carga de recetas (para ir poblando la base sin
       tocar la DB a mano).
 
 ## Fase 7 — Carga de contenido inicial
 
-- [ ] 7.1 Cargar manualmente 20-30 recetas argentinas comunes a través
-      del formulario de la Fase 6.5, cubriendo almuerzo y cena, para
-      tener un plan semanal de prueba realista.
+- [x] 7.1 Cargar manualmente 20-30 recetas argentinas comunes a través
+      del formulario de la Fase 6.5 o mediante el script de siembra
+      (seed_recipes.js), cubriendo almuerzo y cena, para tener un plan
+      semanal de prueba realista.
 
 ---
 
