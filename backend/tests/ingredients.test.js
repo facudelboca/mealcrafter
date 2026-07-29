@@ -4,10 +4,23 @@ import app from '../app.js';
 import prisma from '../prismaClient.js';
 
 describe('Ingredients API', () => {
+  let authCookie;
+
   beforeEach(async () => {
     // Clear database before each test to guarantee test isolation
     await prisma.unitConversion.deleteMany({});
     await prisma.ingredient.deleteMany({});
+    await prisma.user.deleteMany({});
+
+    // Register a test user to get a session cookie
+    const registerRes = await request(app)
+      .post('/api/auth/register')
+      .send({
+        email: 'test@mealcrafter.com',
+        password: 'password123',
+        nombre: 'Test User'
+      });
+    authCookie = registerRes.headers['set-cookie'];
   });
 
   afterAll(async () => {
@@ -17,7 +30,9 @@ describe('Ingredients API', () => {
 
   describe('GET /api/ingredients', () => {
     it('should return an empty list when no ingredients exist', async () => {
-      const res = await request(app).get('/api/ingredients');
+      const res = await request(app)
+        .get('/api/ingredients')
+        .set('Cookie', authCookie);
       expect(res.status).toBe(200);
       expect(res.body).toEqual([]);
     });
@@ -36,7 +51,9 @@ describe('Ingredients API', () => {
         },
       });
 
-      const res = await request(app).get('/api/ingredients');
+      const res = await request(app)
+        .get('/api/ingredients')
+        .set('Cookie', authCookie);
       expect(res.status).toBe(200);
       expect(res.body.length).toBe(1);
       expect(res.body[0].nombre).toBe('papa');
@@ -49,6 +66,7 @@ describe('Ingredients API', () => {
     it('should create a new ingredient', async () => {
       const res = await request(app)
         .post('/api/ingredients')
+        .set('Cookie', authCookie)
         .send({ nombre: 'cebolla', unidad_base: 'g' });
 
       expect(res.status).toBe(201);
@@ -65,6 +83,7 @@ describe('Ingredients API', () => {
     it('should return 400 if required fields are missing', async () => {
       const res = await request(app)
         .post('/api/ingredients')
+        .set('Cookie', authCookie)
         .send({ nombre: 'cebolla' });
 
       expect(res.status).toBe(400);
@@ -78,6 +97,7 @@ describe('Ingredients API', () => {
 
       const res = await request(app)
         .post('/api/ingredients')
+        .set('Cookie', authCookie)
         .send({ nombre: 'CEBOLLA', unidad_base: 'g' });
 
       expect(res.status).toBe(400);
@@ -93,6 +113,7 @@ describe('Ingredients API', () => {
 
       const res = await request(app)
         .post(`/api/ingredients/${ing.id}/conversions`)
+        .set('Cookie', authCookie)
         .send({ unidad_origen: 'kg', factor_a_base: 1000.0 });
 
       expect(res.status).toBe(201);
@@ -117,6 +138,7 @@ describe('Ingredients API', () => {
 
       const res = await request(app)
         .post(`/api/ingredients/${ing.id}/conversions`)
+        .set('Cookie', authCookie)
         .send({ unidad_origen: 'kg', factor_a_base: 1000.5 });
 
       expect(res.status).toBe(201);
@@ -130,6 +152,7 @@ describe('Ingredients API', () => {
 
       const res = await request(app)
         .post(`/api/ingredients/${ing.id}/conversions`)
+        .set('Cookie', authCookie)
         .send({ unidad_origen: 'g', factor_a_base: 1.0 });
 
       expect(res.status).toBe(400);

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 import Navbar from './components/Navbar.jsx';
+import AuthView from './components/AuthView.jsx';
 import MealPlanView from './components/MealPlanView.jsx';
 import RecipesView from './components/RecipesView.jsx';
 import ShoppingListView from './components/ShoppingListView.jsx';
@@ -12,7 +13,58 @@ import ClonePlanModal from './components/ClonePlanModal.jsx';
 
 function App() {
   const [activeTab, setActiveTab] = useState('plan');
+
+  // Theme state
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('mealcrafter_theme') || 'light';
+  });
+
+  useEffect(() => {
+    document.documentElement.className = theme === 'light' ? 'theme-light' : 'theme-dark';
+    localStorage.setItem('mealcrafter_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
   
+  // Auth States
+  const [currentUser, setCurrentUser] = useState(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  // Interceptor to auto-append credentials and detect 401s
+  const authFetch = async (url, options = {}) => {
+    const res = await fetch(url, {
+      ...options,
+      credentials: 'include'
+    });
+    if (res.status === 401 && !url.includes('/api/auth/me')) {
+      setCurrentUser(null);
+    }
+    return res;
+  };
+
+  // Check auth session on mount
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const res = await fetch('/api/auth/me', { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          setCurrentUser(data.user);
+        } else {
+          setCurrentUser(null);
+        }
+      } catch (err) {
+        console.error('Session check error:', err);
+        setCurrentUser(null);
+      } finally {
+        setCheckingAuth(false);
+      }
+    };
+    checkSession();
+  }, []);
+
   // Data States
   const [recipes, setRecipes] = useState([]);
   const [ingredients, setIngredients] = useState([]);
@@ -36,13 +88,21 @@ function App() {
   const [newIngredient, setNewIngredient] = useState({ nombre: '', unidad_base: 'g' });
   const [newConversion, setNewConversion] = useState({ unidad_origen: '', factor_a_base: '' });
 
-  // Initial loading
+  // Sync user data whenever session updates
   useEffect(() => {
-    fetchRecipes();
-    fetchIngredients();
-    fetchPlansList();
-    loadActivePlan();
-  }, []);
+    if (currentUser) {
+      fetchRecipes();
+      fetchIngredients();
+      fetchPlansList();
+      loadActivePlan();
+    } else {
+      setRecipes([]);
+      setIngredients([]);
+      setCurrentPlan(null);
+      setAllPlans([]);
+      setShoppingList({ items: [], no_convertibles: [] });
+    }
+  }, [currentUser]);
 
   // Sync shopping list checkbox state with localStorage when currentPlan changes
   useEffect(() => {
@@ -75,7 +135,7 @@ function App() {
   const fetchRecipes = async (query = '') => {
     try {
       const url = query ? `/api/recipes?q=${encodeURIComponent(query)}` : '/api/recipes';
-      const res = await fetch(url);
+      const res = await authFetch(url);
       const data = await res.json();
       setRecipes(data.results || []);
     } catch (err) {
@@ -86,7 +146,7 @@ function App() {
   // API Call: Fetch ingredients
   const fetchIngredients = async () => {
     try {
-      const res = await fetch('/api/ingredients');
+      const res = await authFetch('/api/ingredients');
       const data = await res.json();
       setIngredients(data);
     } catch (err) {
@@ -97,7 +157,7 @@ function App() {
   // API Call: Fetch plans history list
   const fetchPlansList = async () => {
     try {
-      const res = await fetch('/api/meal-plans');
+      const res = await authFetch('/api/meal-plans');
       if (res.ok) {
         const data = await res.json();
         setAllPlans(data);
@@ -112,7 +172,7 @@ function App() {
     const savedId = localStorage.getItem('mealcrafter_current_plan_id');
     if (savedId) {
       try {
-        const res = await fetch(`/api/meal-plans/${savedId}`);
+        const res = await authFetch(`/api/meal-plans/${savedId}`);
         if (res.ok) {
           const data = await res.json();
           setCurrentPlan(data);
@@ -126,7 +186,7 @@ function App() {
     
     // Fallback: load first plan in list
     try {
-      const res = await fetch('/api/meal-plans');
+      const res = await authFetch('/api/meal-plans');
       if (res.ok) {
         const list = await res.json();
         setAllPlans(list);
@@ -144,7 +204,7 @@ function App() {
   // API Call: Switch active plan
   const handleSwitchPlan = async (planId) => {
     try {
-      const res = await fetch(`/api/meal-plans/${planId}`);
+      const res = await authFetch(`/api/meal-plans/${planId}`);
       if (res.ok) {
         const data = await res.json();
         setCurrentPlan(data);
@@ -159,7 +219,7 @@ function App() {
   const fetchShoppingList = async (planId) => {
     if (!planId) return;
     try {
-      const res = await fetch(`/api/meal-plans/${planId}/shopping-list`);
+      const res = await authFetch(`/api/meal-plans/${planId}/shopping-list`);
       if (res.ok) {
         const data = await res.json();
         setShoppingList(data);
@@ -180,7 +240,7 @@ function App() {
 
     try {
       setLoading(true);
-      const res = await fetch('/api/meal-plans', {
+      const res = await authFetch('/api/meal-plans', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre, fecha_inicio }),
@@ -215,7 +275,7 @@ function App() {
 
     try {
       setLoading(true);
-      const res = await fetch(`/api/meal-plans/${clonePlanModal.planToClone.id}/clone`, {
+      const res = await authFetch(`/api/meal-plans/${clonePlanModal.planToClone.id}/clone`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre, fecha_inicio }),
@@ -244,13 +304,13 @@ function App() {
       return;
     }
     try {
-      const res = await fetch(`/api/meal-plans/${planId}`, {
+      const res = await authFetch(`/api/meal-plans/${planId}`, {
         method: 'DELETE',
       });
       if (res.ok) {
         localStorage.removeItem('mealcrafter_current_plan_id');
         localStorage.removeItem(`mealcrafter_checked_${planId}`);
-        const resList = await fetch('/api/meal-plans');
+        const resList = await authFetch('/api/meal-plans');
         if (resList.ok) {
           const list = await resList.json();
           setAllPlans(list);
@@ -288,7 +348,7 @@ function App() {
       setCurrentPlan({ ...currentPlan, entries: updatedEntries });
 
       // API call
-      const res = await fetch(`/api/meal-plans/${currentPlan.id}/entries/${entryId}`, {
+      const res = await authFetch(`/api/meal-plans/${currentPlan.id}/entries/${entryId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -322,7 +382,7 @@ function App() {
       const method = isEdit ? 'PUT' : 'POST';
       const url = isEdit ? `/api/recipes/${recipeModal.recipeData.id}` : '/api/recipes';
 
-      const res = await fetch(url, {
+      const res = await authFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(recipeData),
@@ -351,7 +411,7 @@ function App() {
     e.preventDefault();
     if (!newIngredient.nombre.trim()) return;
     try {
-      const res = await fetch('/api/ingredients', {
+      const res = await authFetch('/api/ingredients', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newIngredient),
@@ -375,7 +435,7 @@ function App() {
     e.preventDefault();
     if (!selectedIngredient || !newConversion.unidad_origen.trim() || !newConversion.factor_a_base) return;
     try {
-      const res = await fetch(`/api/ingredients/${selectedIngredient.id}/conversions`, {
+      const res = await authFetch(`/api/ingredients/${selectedIngredient.id}/conversions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -387,7 +447,7 @@ function App() {
         setNewConversion({ unidad_origen: '', factor_a_base: '' });
         fetchIngredients();
         
-        const ingRes = await fetch('/api/ingredients');
+        const ingRes = await authFetch('/api/ingredients');
         const ingredientsList = await ingRes.json();
         const updated = ingredientsList.find(i => i.id === selectedIngredient.id);
         setSelectedIngredient(updated);
@@ -403,6 +463,18 @@ function App() {
     }
   };
 
+  // Action: Logout
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      setCurrentUser(null);
+      localStorage.removeItem('mealcrafter_current_plan_id');
+    }
+  };
+
   // Search handler
   const handleSearch = (e) => {
     const q = e.target.value;
@@ -410,9 +482,50 @@ function App() {
     fetchRecipes(q);
   };
 
+  if (checkingAuth) {
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        background: 'var(--bg-app)',
+        color: 'var(--text-primary)',
+        fontFamily: 'var(--font-sans)'
+      }}>
+        <div style={{ fontSize: '16px', fontWeight: '600' }}>Cargando sesión... 🍳</div>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <>
+        <Navbar 
+          activeTab={activeTab} 
+          setActiveTab={setActiveTab} 
+          theme={theme}
+          toggleTheme={toggleTheme}
+          currentUser={null}
+          onLogout={null}
+        />
+        <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <AuthView onLoginSuccess={(user) => setCurrentUser(user)} />
+        </main>
+      </>
+    );
+  }
+
   return (
     <>
-      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Navbar 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        theme={theme}
+        toggleTheme={toggleTheme}
+        currentUser={currentUser}
+        onLogout={handleLogout}
+      />
 
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         {activeTab === 'plan' && (

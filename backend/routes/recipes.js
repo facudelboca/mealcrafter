@@ -1,6 +1,9 @@
 import express from 'express';
 const router = express.Router();
 import { createRecipe, getRecipeById, searchRecipes, updateRecipe } from '../controllers/recipes.js';
+import authMiddleware from '../middleware/authMiddleware.js';
+
+router.use(authMiddleware);
 
 router.get('/', searchRecipes);
 router.get('/:id', getRecipeById);

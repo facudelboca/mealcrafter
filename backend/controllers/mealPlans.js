@@ -35,6 +35,7 @@ const createMealPlan = async (req, res, next) => {
       data: {
         nombre: nombre ? nombre.trim() : null,
         fecha_inicio: startDate,
+        userId: req.user.id,
         entries: {
           create: entriesData,
         },
@@ -72,6 +73,10 @@ const getMealPlanById = async (req, res, next) => {
 
     if (!plan) {
       return res.status(404).json({ error: 'Meal plan not found' });
+    }
+
+    if (plan.userId !== req.user.id) {
+      return res.status(403).json({ error: 'No tienes acceso a este plan semanal' });
     }
 
     // Sort entries logically: day of week order, then meal type (almuerzo first, then cena)
@@ -115,6 +120,10 @@ const updateMealPlanEntry = async (req, res, next) => {
     });
     if (!plan) {
       return res.status(404).json({ error: 'Meal plan not found' });
+    }
+
+    if (plan.userId !== req.user.id) {
+      return res.status(403).json({ error: 'No tienes permisos para modificar este plan semanal' });
     }
 
     // Verify entry exists and belongs to this plan
@@ -192,6 +201,10 @@ const getShoppingList = async (req, res, next) => {
       return res.status(404).json({ error: 'Meal plan not found' });
     }
 
+    if (plan.userId !== req.user.id) {
+      return res.status(403).json({ error: 'No tienes acceso a este plan semanal' });
+    }
+
     const list = await calcularListaDeCompras(id);
     res.json(list);
   } catch (error) {
@@ -203,6 +216,7 @@ const getShoppingList = async (req, res, next) => {
 const getAllMealPlans = async (req, res, next) => {
   try {
     const plans = await prisma.mealPlan.findMany({
+      where: { userId: req.user.id },
       orderBy: { fecha_inicio: 'desc' },
       include: {
         entries: {
@@ -246,6 +260,10 @@ const cloneMealPlan = async (req, res, next) => {
       return res.status(404).json({ error: 'Meal plan not found' });
     }
 
+    if (originalPlan.userId !== req.user.id) {
+      return res.status(403).json({ error: 'No tienes acceso al plan original para clonarlo' });
+    }
+
     const { nombre, fecha_inicio } = req.body;
     if (!fecha_inicio) {
       return res.status(400).json({ error: 'fecha_inicio is required for cloning' });
@@ -267,6 +285,7 @@ const cloneMealPlan = async (req, res, next) => {
       data: {
         nombre: nombre ? nombre.trim() : `${originalPlan.nombre || 'Plan'} - Copia`,
         fecha_inicio: startDate,
+        userId: req.user.id,
         entries: {
           create: newEntriesData,
         },
@@ -288,6 +307,18 @@ const deleteMealPlan = async (req, res, next) => {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
       return res.status(400).json({ error: 'Invalid meal plan ID' });
+    }
+
+    const plan = await prisma.mealPlan.findUnique({
+      where: { id },
+    });
+
+    if (!plan) {
+      return res.status(404).json({ error: 'Meal plan not found' });
+    }
+
+    if (plan.userId !== req.user.id) {
+      return res.status(403).json({ error: 'No tienes permisos para eliminar este plan semanal' });
     }
 
     await prisma.mealPlanEntry.deleteMany({

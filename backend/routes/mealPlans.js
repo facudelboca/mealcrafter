@@ -9,6 +9,9 @@ import {
   cloneMealPlan,
   deleteMealPlan
 } from '../controllers/mealPlans.js';
+import authMiddleware from '../middleware/authMiddleware.js';
+
+router.use(authMiddleware);
 
 router.get('/', getAllMealPlans);
 router.post('/', createMealPlan);

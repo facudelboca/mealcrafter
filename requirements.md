@@ -121,3 +121,14 @@ de la lista de compras sea correcta.
 - Información nutricional.
 - Multiusuario / cuentas compartidas.
 - Importación automática de recetas desde otros sitios.
+
+---
+
+## Próximas Funcionalidades (v2 / Fase 8)
+
+- Buscador inverso de recetas basado en ingredientes en heladera ("¿Qué hay en mi heladera?").
+- Importador automatizado de recetas desde URLs web (Web Scraper).
+- Sincronización familiar colaborativa en tiempo real (WebSockets / Shareable links).
+- Modo Cocina "Sin Manos" (visualización optimizada y bloqueo de suspensión).
+- Perfil dietario de usuario y filtros automatizados en el planificador.
+- Estimador nutricional y de calorías por porción de receta.

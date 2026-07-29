@@ -30,7 +30,6 @@ function RecipesView({ recipes, searchQuery, handleSearch, setRecipeModal, setRe
             <div className="glass-card recipe-card" key={recipe.id} onClick={() => setRecipeDetailModal({ isOpen: true, recipe })}>
               <div className="recipe-card-header">
                 <h3 className="recipe-card-title">{recipe.nombre}</h3>
-                <span className="tag-badge">{recipe.tipo_comida}</span>
               </div>
               <div className="recipe-card-info">
                 <span>👤 {recipe.porciones_base} porciones</span>

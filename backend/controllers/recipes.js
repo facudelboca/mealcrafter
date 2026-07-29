@@ -126,6 +126,7 @@ const createRecipe = async (req, res, next) => {
           tipo_comida,
           tiempo_preparacion_min: prepTime,
           instrucciones: instrucciones.trim(),
+          userId: req.user.id,
         },
       });
 
@@ -183,6 +184,10 @@ const getRecipeById = async (req, res, next) => {
       return res.status(404).json({ error: 'Recipe not found' });
     }
 
+    if (recipe.userId !== null && recipe.userId !== req.user.id) {
+      return res.status(403).json({ error: 'No tienes acceso a esta receta' });
+    }
+
     res.json(recipe);
   } catch (error) {
     next(error);
@@ -200,26 +205,36 @@ const searchRecipes = async (req, res, next) => {
       // Search by recipe name OR ingredient name
       recipes = await prisma.recipe.findMany({
         where: {
-          OR: [
+          AND: [
             {
-              nombre: {
-                contains: q,
-                mode: 'insensitive',
-              },
+              OR: [
+                { userId: null },
+                { userId: req.user.id }
+              ]
             },
             {
-              ingredients: {
-                some: {
-                  ingredient: {
-                    nombre: {
-                      contains: q,
-                      mode: 'insensitive',
+              OR: [
+                {
+                  nombre: {
+                    contains: q,
+                    mode: 'insensitive',
+                  },
+                },
+                {
+                  ingredients: {
+                    some: {
+                      ingredient: {
+                        nombre: {
+                          contains: q,
+                          mode: 'insensitive',
+                        },
+                      },
                     },
                   },
                 },
-              },
-            },
-          ],
+              ]
+            }
+          ]
         },
         include: {
           ingredients: {
@@ -235,6 +250,12 @@ const searchRecipes = async (req, res, next) => {
     } else {
       // If no query parameter, list all recipes
       recipes = await prisma.recipe.findMany({
+        where: {
+          OR: [
+            { userId: null },
+            { userId: req.user.id }
+          ]
+        },
         include: {
           ingredients: {
             include: {
@@ -279,6 +300,10 @@ const updateRecipe = async (req, res, next) => {
 
     if (!existingRecipe) {
       return res.status(404).json({ error: 'Recipe not found' });
+    }
+
+    if (existingRecipe.userId !== req.user.id) {
+      return res.status(403).json({ error: 'No tienes permisos para editar esta receta' });
     }
 
     const { nombre, porciones_base, tipo_comida, tiempo_preparacion_min, instrucciones, ingredients } = req.body;

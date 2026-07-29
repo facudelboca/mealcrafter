@@ -68,6 +68,8 @@ model Recipe {
   created_at             DateTime           @default(now())
   ingredients            RecipeIngredient[]
   mealPlanEntries        MealPlanEntry[]
+  userId                 Int?               @map("user_id")
+  user                   User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@map("recipe")
 }
@@ -89,6 +91,8 @@ model MealPlan {
   nombre       String?
   fecha_inicio DateTime        @db.Date
   entries      MealPlanEntry[]
+  userId       Int?            @map("user_id")
+  user         User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("meal_plan")
 }
@@ -105,4 +109,17 @@ model MealPlanEntry {
 
   @@unique([meal_plan_id, dia, tipo_comida])
   @@map("meal_plan_entry")
+}
+
+model User {
+  id        Int        @id @default(autoincrement())
+  email     String     @unique
+  password  String
+  nombre    String?
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+  mealPlans MealPlan[]
+  recipes   Recipe[]
+
+  @@map("user")
 }

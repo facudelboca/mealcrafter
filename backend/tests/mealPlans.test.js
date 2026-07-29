@@ -4,6 +4,9 @@ import app from '../app.js';
 import prisma from '../prismaClient.js';
 
 describe('Meal Plans API', () => {
+  let authCookie;
+  let userId;
+
   beforeEach(async () => {
     // Clear database in reverse order of dependencies
     await prisma.mealPlanEntry.deleteMany({});
@@ -12,6 +15,18 @@ describe('Meal Plans API', () => {
     await prisma.recipe.deleteMany({});
     await prisma.unitConversion.deleteMany({});
     await prisma.ingredient.deleteMany({});
+    await prisma.user.deleteMany({});
+
+    // Register a test user
+    const registerRes = await request(app)
+      .post('/api/auth/register')
+      .send({
+        email: 'test@mealcrafter.com',
+        password: 'password123',
+        nombre: 'Test User'
+      });
+    authCookie = registerRes.headers['set-cookie'];
+    userId = registerRes.body.user.id;
   });
 
   afterAll(async () => {
@@ -22,6 +37,7 @@ describe('Meal Plans API', () => {
     it('should create a meal plan and generate 14 empty entries', async () => {
       const res = await request(app)
         .post('/api/meal-plans')
+        .set('Cookie', authCookie)
         .send({
           nombre: 'Semana de prueba',
           fecha_inicio: '2026-07-27', // A Monday
@@ -42,6 +58,7 @@ describe('Meal Plans API', () => {
     it('should return 400 if fecha_inicio is missing', async () => {
       const res = await request(app)
         .post('/api/meal-plans')
+        .set('Cookie', authCookie)
         .send({ nombre: 'Sin fecha' });
       expect(res.status).toBe(400);
     });
@@ -49,6 +66,7 @@ describe('Meal Plans API', () => {
     it('should return 400 if fecha_inicio format is invalid', async () => {
       const res = await request(app)
         .post('/api/meal-plans')
+        .set('Cookie', authCookie)
         .send({ fecha_inicio: 'fecha-invalida' });
       expect(res.status).toBe(400);
     });
@@ -60,6 +78,7 @@ describe('Meal Plans API', () => {
         data: {
           nombre: 'Semana de orden',
           fecha_inicio: new Date('2026-07-27'),
+          userId: userId, // Link to test user
           entries: {
             create: [
               { dia: 'martes', tipo_comida: 'cena', comensales: 0 },
@@ -72,7 +91,9 @@ describe('Meal Plans API', () => {
         include: { entries: true },
       });
 
-      const res = await request(app).get(`/api/meal-plans/${plan.id}`);
+      const res = await request(app)
+        .get(`/api/meal-plans/${plan.id}`)
+        .set('Cookie', authCookie);
       expect(res.status).toBe(200);
       expect(res.body.entries.length).toBe(4);
       // Verify order: lunes almuerzo, lunes cena, martes almuerzo, martes cena
@@ -87,7 +108,9 @@ describe('Meal Plans API', () => {
     });
 
     it('should return 404 for non-existent meal plan', async () => {
-      const res = await request(app).get('/api/meal-plans/99999');
+      const res = await request(app)
+        .get('/api/meal-plans/99999')
+        .set('Cookie', authCookie);
       expect(res.status).toBe(404);
     });
   });
@@ -106,11 +129,12 @@ describe('Meal Plans API', () => {
         },
       });
 
-      // 2. Create a meal plan with entries
+      // 2. Create a meal plan with entries linked to test user
       plan = await prisma.mealPlan.create({
         data: {
           nombre: 'Mi semana',
           fecha_inicio: new Date('2026-07-27'),
+          userId: userId, // Link to test user
           entries: {
             create: [
               { dia: 'lunes', tipo_comida: 'almuerzo', comensales: 0 },
@@ -126,6 +150,7 @@ describe('Meal Plans API', () => {
     it('should assign a recipe and use recipe porciones_base as default comensales count', async () => {
       const res = await request(app)
         .put(`/api/meal-plans/${plan.id}/entries/${entry.id}`)
+        .set('Cookie', authCookie)
         .send({ recipe_id: recipe.id });
 
       expect(res.status).toBe(200);
@@ -136,6 +161,7 @@ describe('Meal Plans API', () => {
     it('should assign a recipe with custom comensales count', async () => {
       const res = await request(app)
         .put(`/api/meal-plans/${plan.id}/entries/${entry.id}`)
+        .set('Cookie', authCookie)
         .send({ recipe_id: recipe.id, comensales: 6 });
 
       expect(res.status).toBe(200);
@@ -146,6 +172,7 @@ describe('Meal Plans API', () => {
     it('should return 400 if comensales is invalid (<= 0)', async () => {
       const res = await request(app)
         .put(`/api/meal-plans/${plan.id}/entries/${entry.id}`)
+        .set('Cookie', authCookie)
         .send({ recipe_id: recipe.id, comensales: 0 });
 
       expect(res.status).toBe(400);
@@ -155,6 +182,7 @@ describe('Meal Plans API', () => {
     it('should return 400 if recipe does not exist', async () => {
       const res = await request(app)
         .put(`/api/meal-plans/${plan.id}/entries/${entry.id}`)
+        .set('Cookie', authCookie)
         .send({ recipe_id: 99999 });
 
       expect(res.status).toBe(400);
@@ -170,6 +198,7 @@ describe('Meal Plans API', () => {
       // 2. Unassign
       const res = await request(app)
         .put(`/api/meal-plans/${plan.id}/entries/${entry.id}`)
+        .set('Cookie', authCookie)
         .send({ recipe_id: null });
 
       expect(res.status).toBe(200);

@@ -159,6 +159,9 @@ describe('Shopping List Service & API', () => {
 
   // Integration tests using DB and HTTP endpoint
   describe('GET /api/meal-plans/:id/shopping-list (Integration & Performance)', () => {
+    let authCookie;
+    let userId;
+
     beforeEach(async () => {
       // Clear database
       await prisma.mealPlanEntry.deleteMany({});
@@ -167,6 +170,18 @@ describe('Shopping List Service & API', () => {
       await prisma.recipe.deleteMany({});
       await prisma.unitConversion.deleteMany({});
       await prisma.ingredient.deleteMany({});
+      await prisma.user.deleteMany({});
+
+      // Register a test user
+      const registerRes = await request(app)
+        .post('/api/auth/register')
+        .send({
+          email: 'test@mealcrafter.com',
+          password: 'password123',
+          nombre: 'Test User'
+        });
+      authCookie = registerRes.headers['set-cookie'];
+      userId = registerRes.body.user.id;
     });
 
     afterAll(async () => {
@@ -217,14 +232,12 @@ describe('Shopping List Service & API', () => {
       });
 
       // 3. Create a complete meal plan with 14 entries
-      // To perform a realistic performance test, let's load all 14 entries
       const days = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
       const meals = ['almuerzo', 'cena'];
       const entriesData = [];
 
       for (const dia of days) {
         for (const tipo_comida of meals) {
-          // Assign Puré to almuerzos and Bife to cenas
           const isAlmuerzo = tipo_comida === 'almuerzo';
           entriesData.push({
             dia,
@@ -239,6 +252,7 @@ describe('Shopping List Service & API', () => {
         data: {
           nombre: 'Semana completa',
           fecha_inicio: new Date('2026-07-27'),
+          userId: userId, // Link to test user
           entries: {
             create: entriesData,
           },
@@ -248,7 +262,9 @@ describe('Shopping List Service & API', () => {
       // 4. Measure response time (performance check)
       const startTime = performance.now();
       
-      const res = await request(app).get(`/api/meal-plans/${plan.id}/shopping-list`);
+      const res = await request(app)
+        .get(`/api/meal-plans/${plan.id}/shopping-list`)
+        .set('Cookie', authCookie);
       
       const endTime = performance.now();
       const durationMs = endTime - startTime;
@@ -258,7 +274,6 @@ describe('Shopping List Service & API', () => {
       expect(res.body.no_convertibles).toBeDefined();
 
       console.log(`Shopping list endpoint response time for 14 entries: ${durationMs.toFixed(2)}ms`);
-      // Performance check (Requirement 3.1, criterion of performance: response under 2 seconds)
       expect(durationMs).toBeLessThan(2000.0);
 
       // Verify the math:

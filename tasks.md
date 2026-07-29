@@ -109,6 +109,17 @@ cada fase debe quedar funcional antes de pasar a la siguiente.
 
 ---
 
+## Fase 8 — Próximas Funcionalidades (Roadmap)
+
+- [ ] 8.1 Buscador inverso de recetas basado en ingredientes en heladera ("¿Qué hay en mi heladera?").
+- [ ] 8.2 Importador automatizado de recetas desde URLs web (Web Scraper).
+- [ ] 8.3 Sincronización familiar colaborativa en tiempo real (WebSockets / Shareable links).
+- [ ] 8.4 Modo Cocina "Sin Manos" (visualización optimizada y bloqueo de suspensión).
+- [ ] 8.5 Perfil dietario de usuario y filtros automatizados en el planificador.
+- [ ] 8.6 Estimador nutricional y de calorías por porción de receta.
+
+---
+
 **Nota para el agente de código:** las Fases 0-5 son backend puro y se
 pueden completar y probar con curl/Postman antes de tocar el frontend.
 No avanzar a la Fase 6 hasta que los tests de la Fase 5 pasen.

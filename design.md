@@ -146,10 +146,25 @@ Notas de implementación:
 | GET | /api/ingredients | Listar catálogo de ingredientes |
 | POST | /api/ingredients | Crear ingrediente |
 | POST | /api/ingredients/:id/conversions | Agregar factor de conversión |
+| GET | /api/meal-plans | Listar historial de todos los planes semanales |
 | POST | /api/meal-plans | Crear plan semanal (vacío o con entradas) |
 | GET | /api/meal-plans/:id | Ver plan con sus entradas |
+| POST | /api/meal-plans/:id/clone | Clonar/Duplicar un plan para otra semana con comensales |
+| DELETE | /api/meal-plans/:id | Eliminar un plan de la base de datos |
 | PUT | /api/meal-plans/:id/entries/:entryId | Asignar receta + comensales a un día/comida |
 | GET | /api/meal-plans/:id/shopping-list | Calcular y devolver lista de compras (algoritmo de sección 3) |
+
+---
+
+## 4.1 UI Design System (Tema Claro & Pastel)
+
+*   **Paleta de Colores**: Basada en colores pasteles y limpios con alto contraste para simular aplicaciones nativas de cocina:
+    *   Fondo de App: `#f4f6f9` (pastel claro neutro).
+    *   Tarjetas de contenido: `#ffffff` (blanco puro) con sombras `.shadow-premium` de tonalidades `#94a3b8` para un efecto de elevación suave.
+    *   Bordes de separación: `#e2e8f0` (slate-200) para delimitar espacios sin recargar la pantalla.
+    *   Color Primario: `#10b981` (verde esmeralda suave / menta).
+*   **Agrupamiento de Lista de Compras**: Mapa estático de ingredientes en el cliente para agrupar en secciones (Verdulería, Carnicería, Lácteos, Panadería, etc.) facilitando el recorrido de compras del usuario.
+*   **Detalles en Pestañas (Tabs)**: Navegación local en el modal de recetas dividiendo la información en "Ingredientes" (escalables dinámicamente) y "Preparación".
 
 ### Ejemplo de payload — PUT entry
 

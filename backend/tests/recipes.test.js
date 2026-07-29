@@ -4,6 +4,9 @@ import app from '../app.js';
 import prisma from '../prismaClient.js';
 
 describe('Recipes API', () => {
+  let authCookie;
+  let userId;
+
   beforeEach(async () => {
     // Clear all tables in reverse order of dependency
     await prisma.mealPlanEntry.deleteMany({});
@@ -12,6 +15,18 @@ describe('Recipes API', () => {
     await prisma.recipe.deleteMany({});
     await prisma.unitConversion.deleteMany({});
     await prisma.ingredient.deleteMany({});
+    await prisma.user.deleteMany({});
+
+    // Register a test user
+    const registerRes = await request(app)
+      .post('/api/auth/register')
+      .send({
+        email: 'test@mealcrafter.com',
+        password: 'password123',
+        nombre: 'Test User'
+      });
+    authCookie = registerRes.headers['set-cookie'];
+    userId = registerRes.body.user.id;
   });
 
   afterAll(async () => {
@@ -28,6 +43,7 @@ describe('Recipes API', () => {
       // 2. Create a recipe referencing existing and new ingredients
       const res = await request(app)
         .post('/api/recipes')
+        .set('Cookie', authCookie)
         .send({
           nombre: 'Papas fritas',
           porciones_base: 2,
@@ -56,6 +72,7 @@ describe('Recipes API', () => {
     it('should return 400 if required fields are missing', async () => {
       const res = await request(app)
         .post('/api/recipes')
+        .set('Cookie', authCookie)
         .send({
           nombre: 'Solo nombre',
         });
@@ -75,6 +92,7 @@ describe('Recipes API', () => {
           porciones_base: 4,
           tipo_comida: 'cena',
           instrucciones: 'Hervir cebollas.',
+          userId: userId, // owned by test user
           ingredients: {
             create: {
               ingredient_id: createdIng.id,
@@ -85,7 +103,9 @@ describe('Recipes API', () => {
         },
       });
 
-      const res = await request(app).get(`/api/recipes/${createdRecipe.id}`);
+      const res = await request(app)
+        .get(`/api/recipes/${createdRecipe.id}`)
+        .set('Cookie', authCookie);
       expect(res.status).toBe(200);
       expect(res.body.nombre).toBe('Sopa de cebolla');
       expect(res.body.ingredients.length).toBe(1);
@@ -93,7 +113,9 @@ describe('Recipes API', () => {
     });
 
     it('should return 404 for non-existent recipe', async () => {
-      const res = await request(app).get('/api/recipes/99999');
+      const res = await request(app)
+        .get('/api/recipes/99999')
+        .set('Cookie', authCookie);
       expect(res.status).toBe(404);
     });
   });
@@ -133,21 +155,27 @@ describe('Recipes API', () => {
     });
 
     it('should search by recipe name', async () => {
-      const res = await request(app).get('/api/recipes?q=puré');
+      const res = await request(app)
+        .get('/api/recipes?q=puré')
+        .set('Cookie', authCookie);
       expect(res.status).toBe(200);
       expect(res.body.results.length).toBe(1);
       expect(res.body.results[0].nombre).toBe('Puré de papas');
     });
 
     it('should search by ingredient name', async () => {
-      const res = await request(app).get('/api/recipes?q=carne');
+      const res = await request(app)
+        .get('/api/recipes?q=carne')
+        .set('Cookie', authCookie);
       expect(res.status).toBe(200);
       expect(res.body.results.length).toBe(1);
       expect(res.body.results[0].nombre).toBe('Estofado de carne');
     });
 
     it('should return context message when no results are found', async () => {
-      const res = await request(app).get('/api/recipes?q=maracuyá');
+      const res = await request(app)
+        .get('/api/recipes?q=maracuyá')
+        .set('Cookie', authCookie);
       expect(res.status).toBe(200);
       expect(res.body.results).toEqual([]);
       expect(res.body.message).toContain('No se encontraron recetas');
@@ -166,6 +194,7 @@ describe('Recipes API', () => {
           porciones_base: 2,
           tipo_comida: 'almuerzo',
           instrucciones: 'Hacer puré.',
+          userId: userId, // Owned by test user so they can edit it
           ingredients: {
             create: { ingredient_id: ingPapa.id, cantidad: 500, unidad: 'g' },
           },
@@ -174,6 +203,7 @@ describe('Recipes API', () => {
 
       const res = await request(app)
         .put(`/api/recipes/${recipe.id}`)
+        .set('Cookie', authCookie)
         .send({
           nombre: 'Puré premium',
           porciones_base: 3,

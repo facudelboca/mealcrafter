@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-function RecipeSelect({ value, onChange, recipes }) {
+function RecipeSelect({ value, onChange, recipes, alignUp }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const containerRef = useRef(null);
@@ -39,14 +39,20 @@ function RecipeSelect({ value, onChange, recipes }) {
         }}
       >
         <span style={{ 
-          whiteSpace: 'nowrap', 
-          overflow: 'hidden', 
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
           textOverflow: 'ellipsis',
-          maxWidth: '85%'
+          whiteSpace: 'normal',
+          lineHeight: '1.2',
+          textAlign: 'left',
+          flex: 1,
+          marginRight: '4px'
         }}>
           {selectedRecipe ? selectedRecipe.nombre : '-- Vacío --'}
         </span>
-        <span style={{ fontSize: '10px', opacity: 0.7 }}>▼</span>
+        <span style={{ fontSize: '10px', opacity: 0.7, flexShrink: 0 }}>▼</span>
       </div>
 
       {/* Floating Dropdown List */}
@@ -55,17 +61,17 @@ function RecipeSelect({ value, onChange, recipes }) {
           className="glass-card" 
           style={{ 
             position: 'absolute',
-            top: 'calc(100% + 4px)',
+            [alignUp ? 'bottom' : 'top']: 'calc(100% + 4px)',
             left: 0,
             right: 0,
             zIndex: 100,
             padding: '8px',
-            background: '#1f2937',
+            background: 'var(--bg-card)',
             maxHeight: '260px',
             display: 'flex',
             flexDirection: 'column',
             gap: '8px',
-            boxShadow: '0 10px 25px -5px rgba(0,0,0,0.6)',
+            boxShadow: 'var(--shadow-premium)',
             borderColor: 'var(--primary)'
           }}
         >
@@ -81,7 +87,8 @@ function RecipeSelect({ value, onChange, recipes }) {
             style={{ 
               padding: '6px 10px', 
               fontSize: '13px',
-              background: '#111827'
+              background: 'var(--bg-app)',
+              color: 'var(--text-primary)'
             }}
           />
 

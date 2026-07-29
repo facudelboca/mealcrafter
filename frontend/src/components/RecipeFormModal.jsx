@@ -83,7 +83,7 @@ function RecipeFormModal({ type, recipeData, onClose, onSave, loading }) {
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div className="form-group">
                 <label className="form-label">Porciones Base</label>
                 <input
@@ -94,18 +94,6 @@ function RecipeFormModal({ type, recipeData, onClose, onSave, loading }) {
                   onChange={(e) => setPorcionesBase(e.target.value)}
                   required
                 />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Tipo de Comida</label>
-                <select
-                  className="form-select"
-                  value={tipoComida}
-                  onChange={(e) => setTipoComida(e.target.value)}
-                >
-                  <option value="almuerzo">Almuerzo</option>
-                  <option value="cena">Cena</option>
-                  <option value="ambos">Ambos</option>
-                </select>
               </div>
               <div className="form-group">
                 <label className="form-label">Tiempo Prep. (min)</label>

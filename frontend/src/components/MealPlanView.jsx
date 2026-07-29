@@ -1,6 +1,14 @@
 import React from 'react';
 import RecipeSelect from './RecipeSelect.jsx';
 
+const getTodayName = () => {
+  const weekday = new Date().toLocaleDateString('es-AR', { weekday: 'long' }).toLowerCase();
+  return weekday
+    .replace('miércoles', 'miercoles')
+    .replace('sábado', 'sabado')
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // strip accents
+};
+
 function MealPlanView({ 
   currentPlan, 
   recipes, 
@@ -26,6 +34,7 @@ function MealPlanView({
 
   const days = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
   const meals = ['almuerzo', 'cena'];
+  const todayName = getTodayName();
 
   return (
     <div className="glass-card">
@@ -83,11 +92,15 @@ function MealPlanView({
       <div className="plan-grid-wrapper">
         <div className="plan-grid">
           {days.map(dayName => {
+            const isToday = dayName === todayName;
             const dayEntries = currentPlan.entries.filter(e => e.dia === dayName);
             
             return (
-              <div className="day-column" key={dayName}>
-                <div className="day-name">{dayName}</div>
+              <div className={`day-column ${isToday ? 'today-highlight' : ''}`} key={dayName}>
+                <div className="day-name" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  {dayName} 
+                  {isToday && <span className="today-badge">Hoy</span>}
+                </div>
                 {meals.map(mealType => {
                   const entry = dayEntries.find(e => e.tipo_comida === mealType) || { id: null, recipe_id: null, comensales: 0 };
                   const isAssigned = !!entry.recipe_id;
@@ -100,6 +113,7 @@ function MealPlanView({
                         value={entry.recipe_id || ''}
                         onChange={(val) => handleUpdateEntry(entry.id, val, entry.comensales)}
                         recipes={recipes}
+                        alignUp={mealType === 'cena'}
                       />
 
                       {isAssigned && (
