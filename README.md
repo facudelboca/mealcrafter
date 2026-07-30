@@ -41,9 +41,9 @@ Adicionalmente, cuenta con un buscador e importador de recetas web que las tradu
 
 *   **Frontend**: React (Vite), Vanilla CSS (diseño responsive premium), SVG para iconos.
 *   **Backend**: Node.js, Express.js.
-*   **Base de Datos y ORM**: PostgreSQL, Prisma ORM.
+*   **Base de Datos y ORM**: PostgreSQL (Supabase en producción), Prisma ORM.
 *   **Testing**: Vitest (Unit y API Integration Tests), Supertest.
-*   **Infraestructura**: Vercel (Hosting estático y Serverless Functions), Docker (para servicios PostgreSQL en desarrollo), GitHub Actions (CI Pipeline).
+*   **Infraestructura**: Vercel (Hosting estático y Serverless Functions), Supabase (Base de datos en la nube), Docker (PostgreSQL local), GitHub Actions (CI Pipeline).
 
 ---
 
