@@ -3,9 +3,12 @@ import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 
-// Use pg Pool to manage database connections
+// Use pg Pool to manage database connections with conditional SSL for Supabase
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL && (process.env.DATABASE_URL.includes('supabase.co') || process.env.DATABASE_URL.includes('pooler.supabase.com'))
+    ? { rejectUnauthorized: false }
+    : false
 });
 
 // Use PrismaPg driver adapter for PostgreSQL connection in Prisma 7
