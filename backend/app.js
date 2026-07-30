@@ -22,16 +22,17 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
-app.get('/api/health', (req, res) => {
+app.get(['/api/health', '/health'], (req, res) => {
   res.json({ status: 'ok', message: 'MealCrafter API is running' });
 });
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-app.use('/api/auth', authRouter);
-app.use('/api/ingredients', ingredientsRouter);
-app.use('/api/recipes', recipesRouter);
-app.use('/api/meal-plans', mealPlansRouter);
+// Support both prefixed and non-prefixed paths for environment cross-compatibility
+app.use(['/api/auth', '/auth'], authRouter);
+app.use(['/api/ingredients', '/ingredients'], ingredientsRouter);
+app.use(['/api/recipes', '/recipes'], recipesRouter);
+app.use(['/api/meal-plans', '/meal-plans'], mealPlansRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
