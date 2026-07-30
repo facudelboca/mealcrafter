@@ -2,6 +2,6 @@
   "name": "mealcrafter-monorepo",
   "version": "1.0.0",
   "scripts": {
-    "build": "npm install --prefix frontend && npm run build --prefix frontend && npm install --prefix backend && prisma generate --schema=backend/prisma/schema.prisma"
+    "build": "npm install --prefix frontend && npm run build --prefix frontend && npm install --prefix backend && npx prisma generate --schema=backend/prisma/schema.prisma"
   }
 }
