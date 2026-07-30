@@ -1,0 +1,53 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Build and Test Backend
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: mealcrafter
+          POSTGRES_PASSWORD: mealcrafterpassword
+          POSTGRES_DB: mealcrafter_test
+        ports:
+          - 5433:5432
+        # Wait until postgres is ready
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Install Monorepo Dependencies
+        run: npm install --production=false
+
+      - name: Install Backend Dependencies
+        run: npm install --prefix backend --production=false
+
+      - name: Generate Prisma Client
+        run: npx prisma generate --schema=backend/prisma/schema.prisma
+
+      - name: Run Backend Integration Tests
+        env:
+          DATABASE_URL: "postgresql://mealcrafter:mealcrafterpassword@localhost:5433/mealcrafter_test?schema=public"
+          JWT_SECRET: "ci_jwt_secret_test_key"
+        run: npm run test --prefix backend
