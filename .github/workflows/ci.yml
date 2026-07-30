@@ -39,6 +39,12 @@ jobs:
       - name: Install Monorepo Dependencies
         run: npm install --production=false
 
+      - name: Install Frontend Dependencies
+        run: npm install --prefix frontend --production=false
+
+      - name: Build Frontend (Compilation Check)
+        run: npm run build --prefix frontend
+
       - name: Install Backend Dependencies
         run: npm install --prefix backend --production=false
 
