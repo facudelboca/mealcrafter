@@ -7,6 +7,7 @@ import authRouter from './routes/authRoutes.js';
 import ingredientsRouter from './routes/ingredients.js';
 import recipesRouter from './routes/recipes.js';
 import mealPlansRouter from './routes/mealPlans.js';
+import externalRecipesRouter from './routes/externalRecipes.js';
 import swaggerUi from 'swagger-ui-express';
 import { createRequire } from 'module';
 
@@ -33,6 +34,7 @@ app.use(['/api/auth', '/auth'], authRouter);
 app.use(['/api/ingredients', '/ingredients'], ingredientsRouter);
 app.use(['/api/recipes', '/recipes'], recipesRouter);
 app.use(['/api/meal-plans', '/meal-plans'], mealPlansRouter);
+app.use(['/api/external', '/external'], externalRecipesRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

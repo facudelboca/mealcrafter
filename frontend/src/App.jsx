@@ -10,6 +10,7 @@ import MealPlanModal from './components/MealPlanModal.jsx';
 import RecipeDetailModal from './components/RecipeDetailModal.jsx';
 import RecipeFormModal from './components/RecipeFormModal.jsx';
 import ClonePlanModal from './components/ClonePlanModal.jsx';
+import ExternalImportModal from './components/ExternalImportModal.jsx';
 
 function App() {
   const [activeTab, setActiveTab] = useState('plan');
@@ -82,6 +83,7 @@ function App() {
   const [recipeDetailModal, setRecipeDetailModal] = useState({ isOpen: false, recipe: null });
   const [mealPlanModal, setMealPlanModal] = useState({ isOpen: false });
   const [clonePlanModal, setClonePlanModal] = useState({ isOpen: false, planToClone: null });
+  const [externalImportModal, setExternalImportModal] = useState({ isOpen: false });
 
   // Catalog Manager State
   const [selectedIngredient, setSelectedIngredient] = useState(null);
@@ -406,6 +408,28 @@ function App() {
     }
   };
 
+  // Action: Delete Recipe
+  const handleDeleteRecipe = async (recipeId) => {
+    try {
+      const res = await authFetch(`/api/recipes/${recipeId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        fetchRecipes(searchQuery);
+        fetchIngredients();
+        if (currentPlan) {
+          loadActivePlan();
+        }
+      } else {
+        const err = await res.json();
+        alert(`Error al eliminar receta: ${err.error}`);
+      }
+    } catch (error) {
+      console.error('Error deleting recipe:', error);
+      alert('Error de conexión al eliminar la receta');
+    }
+  };
+
   // Action: Create Ingredient
   const handleCreateIngredient = async (e) => {
     e.preventDefault();
@@ -548,6 +572,8 @@ function App() {
             handleSearch={handleSearch}
             setRecipeModal={setRecipeModal}
             setRecipeDetailModal={setRecipeDetailModal}
+            setExternalImportModal={setExternalImportModal}
+            handleDeleteRecipe={handleDeleteRecipe}
           />
         )}
 
@@ -606,6 +632,15 @@ function App() {
         onClose={() => setClonePlanModal({ isOpen: false, planToClone: null })}
         onSubmit={handleClonePlan}
         loading={loading}
+      />
+
+      <ExternalImportModal
+        isOpen={externalImportModal.isOpen}
+        onClose={() => setExternalImportModal({ isOpen: false })}
+        onImportSuccess={() => {
+          fetchRecipes();
+          fetchIngredients();
+        }}
       />
     </>
   );

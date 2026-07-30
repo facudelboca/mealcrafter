@@ -1,6 +1,6 @@
 import React from 'react';
 
-function RecipesView({ recipes, searchQuery, handleSearch, setRecipeModal, setRecipeDetailModal }) {
+function RecipesView({ recipes, searchQuery, handleSearch, setRecipeModal, setRecipeDetailModal, setExternalImportModal, handleDeleteRecipe }) {
   return (
     <div className="page-container">
       <div className="search-bar-container">
@@ -17,13 +17,23 @@ function RecipesView({ recipes, searchQuery, handleSearch, setRecipeModal, setRe
             onChange={handleSearch}
           />
         </div>
-        <button className="btn-primary" onClick={() => setRecipeModal({ isOpen: true, type: 'create', recipeData: null })}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          Nueva Receta
-        </button>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button className="btn-secondary" onClick={() => setExternalImportModal({ isOpen: true })}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            Buscar en la Web
+          </button>
+          <button className="btn-primary" onClick={() => setRecipeModal({ isOpen: true, type: 'create', recipeData: null })}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Nueva Receta
+          </button>
+        </div>
       </div>
 
       {recipes.length === 0 ? (
@@ -34,7 +44,7 @@ function RecipesView({ recipes, searchQuery, handleSearch, setRecipeModal, setRe
             </svg>
           </div>
           <h2>No se encontraron recetas</h2>
-          <p>Intenta cambiar el criterio de búsqueda o crea una nueva receta en el catálogo.</p>
+          <p>Intenta cambiar el criterio de búsqueda, importa una desde la web o crea una nueva receta en el catálogo.</p>
         </div>
       ) : (
         <div className="recipes-grid">
@@ -63,7 +73,7 @@ function RecipesView({ recipes, searchQuery, handleSearch, setRecipeModal, setRe
                   </span>
                 )}
               </div>
-              <div className="recipe-card-actions" onClick={(e) => e.stopPropagation()}>
+              <div className="recipe-card-actions" onClick={(e) => e.stopPropagation()} style={{ display: 'flex', gap: '8px' }}>
                 <button 
                   className="btn-icon" 
                   title="Editar Receta"
@@ -72,6 +82,23 @@ function RecipesView({ recipes, searchQuery, handleSearch, setRecipeModal, setRe
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                     <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                </button>
+                <button 
+                  className="btn-icon" 
+                  title="Eliminar Receta"
+                  style={{ color: '#ef4444' }}
+                  onClick={() => {
+                    if (window.confirm(`¿Estás seguro de que deseas eliminar la receta "${recipe.nombre}"?`)) {
+                      handleDeleteRecipe(recipe.id);
+                    }
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
                   </svg>
                 </button>
               </div>

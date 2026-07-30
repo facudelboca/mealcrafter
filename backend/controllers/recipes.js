@@ -389,9 +389,42 @@ const updateRecipe = async (req, res, next) => {
   }
 };
 
+// DELETE /api/recipes/:id
+const deleteRecipe = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const recipeId = parseInt(id, 10);
+    if (isNaN(recipeId)) {
+      return res.status(400).json({ error: 'ID de receta inválido' });
+    }
+
+    const recipe = await prisma.recipe.findUnique({
+      where: { id: recipeId }
+    });
+
+    if (!recipe) {
+      return res.status(404).json({ error: 'Receta no encontrada' });
+    }
+
+    if (recipe.userId !== req.user.id) {
+      return res.status(403).json({ error: 'No tienes permiso para eliminar esta receta' });
+    }
+
+    // Cascade delete of recipe_ingredients is handled automatically by Postgres Cascade
+    await prisma.recipe.delete({
+      where: { id: recipeId }
+    });
+
+    res.json({ message: 'Receta eliminada exitosamente' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export {
   createRecipe,
   getRecipeById,
   searchRecipes,
   updateRecipe,
+  deleteRecipe,
 };

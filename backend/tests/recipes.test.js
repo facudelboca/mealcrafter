@@ -228,4 +228,66 @@ describe('Recipes API', () => {
       expect(updatedRecipe.ingredients.some(i => i.ingredient.nombre === 'manteca')).toBe(true);
     });
   });
+
+  describe('DELETE /api/recipes/:id', () => {
+    it('should delete recipe owned by current user and clear ingredients links', async () => {
+      const ingPapa = await prisma.ingredient.create({
+        data: { nombre: 'papa', unidad_base: 'g' },
+      });
+
+      const recipe = await prisma.recipe.create({
+        data: {
+          nombre: 'Puré simple',
+          porciones_base: 2,
+          tipo_comida: 'almuerzo',
+          instrucciones: 'Hacer puré.',
+          userId: userId,
+          ingredients: {
+            create: { ingredient_id: ingPapa.id, cantidad: 500, unidad: 'g' },
+          },
+        },
+      });
+
+      const res = await request(app)
+        .delete(`/api/recipes/${recipe.id}`)
+        .set('Cookie', authCookie);
+
+      expect(res.status).toBe(200);
+      expect(res.body.message).toContain('eliminada exitosamente');
+
+      // Verify it is gone from DB
+      const dbRecipe = await prisma.recipe.findUnique({
+        where: { id: recipe.id }
+      });
+      expect(dbRecipe).toBeNull();
+    });
+
+    it('should return 403 when trying to delete a recipe owned by another user', async () => {
+      // Register another user
+      const registerRes2 = await request(app)
+        .post('/api/auth/register')
+        .send({
+          email: 'other@mealcrafter.com',
+          password: 'password123',
+          nombre: 'Other User'
+        });
+      const otherUserId = registerRes2.body.user.id;
+
+      const recipe = await prisma.recipe.create({
+        data: {
+          nombre: 'Receta Secreta',
+          porciones_base: 1,
+          tipo_comida: 'almuerzo',
+          instrucciones: 'Nada.',
+          userId: otherUserId,
+        },
+      });
+
+      const res = await request(app)
+        .delete(`/api/recipes/${recipe.id}`)
+        .set('Cookie', authCookie); // current test user cookies
+
+      expect(res.status).toBe(403);
+    });
+  });
 });
