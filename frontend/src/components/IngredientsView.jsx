@@ -39,9 +39,15 @@ function IngredientsView({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {/* Create ingredient form */}
             <form onSubmit={handleCreateIngredient} className="glass-card" style={{ padding: '20px', background: 'rgba(0,0,0,0.2)' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '14px' }}>➕ Crear Nuevo Ingrediente</h3>
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
-                <div className="form-group" style={{ flex: 2 }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Crear Nuevo Ingrediente
+              </h3>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                <div className="form-group" style={{ flex: 2, minWidth: '150px' }}>
                   <label className="form-label">Nombre</label>
                   <input 
                     type="text" 
@@ -52,7 +58,7 @@ function IngredientsView({
                     required
                   />
                 </div>
-                <div className="form-group" style={{ flex: 1 }}>
+                <div className="form-group" style={{ flex: 1, minWidth: '100px' }}>
                   <label className="form-label">Unidad Base</label>
                   <select 
                     className="form-select"
@@ -64,15 +70,22 @@ function IngredientsView({
                     <option value="unidad">unidad</option>
                   </select>
                 </div>
-                <button type="submit" className="btn-primary" style={{ padding: '10px 16px' }}>Crear</button>
+                <button type="submit" className="btn-primary" style={{ padding: '10px 16px', height: '40px' }}>Crear</button>
               </div>
             </form>
 
             {/* Add conversion factors */}
             {selectedIngredient ? (
               <div className="glass-card" style={{ padding: '20px', background: 'rgba(0,0,0,0.2)' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '14px', textTransform: 'capitalize' }}>
-                  ⚖️ Conversiones para "{selectedIngredient.nombre}"
+                <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '14px', textTransform: 'capitalize', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                    <path d="M2 17l10 5 10-5"></path>
+                    <path d="M2 12l10 5 10-5"></path>
+                  </svg>
+                  Conversiones para "{selectedIngredient.nombre}"
                 </h3>
                 
                 <div style={{ marginBottom: '16px' }}>
@@ -91,8 +104,8 @@ function IngredientsView({
                   <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: 'var(--text-secondary)' }}>
                     Agregar Factor de Conversión
                   </h4>
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
-                    <div className="form-group" style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                    <div className="form-group" style={{ flex: 1, minWidth: '100px' }}>
                       <label className="form-label">Unidad Origen</label>
                       <input 
                         type="text" 
@@ -103,7 +116,7 @@ function IngredientsView({
                         required
                       />
                     </div>
-                    <div className="form-group" style={{ flex: 1 }}>
+                    <div className="form-group" style={{ flex: 1, minWidth: '100px' }}>
                       <label className="form-label">Equivale en {selectedIngredient.unidad_base} a</label>
                       <input 
                         type="number" 
@@ -115,7 +128,7 @@ function IngredientsView({
                         required
                       />
                     </div>
-                    <button type="submit" className="btn-primary" style={{ padding: '10px 16px' }}>Añadir</button>
+                    <button type="submit" className="btn-primary" style={{ padding: '10px 16px', height: '40px' }}>Añadir</button>
                   </div>
                 </form>
               </div>
