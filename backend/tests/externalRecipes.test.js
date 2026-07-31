@@ -126,4 +126,94 @@ describe('External Recipes API', () => {
       expect(res.status).toBe(401);
     });
   });
+
+  describe('Local Community / Public Recipes Integration', () => {
+    let localPublicRecipeId = 0;
+
+    beforeEach(async () => {
+      // Create a dummy public recipe (userId: null)
+      const ing = await prisma.ingredient.create({
+        data: { nombre: 'dulce de leche', unidad_base: 'g' }
+      });
+
+      const recipe = await prisma.recipe.create({
+        data: {
+          nombre: 'Milanesa de berenjena',
+          porciones_base: 2,
+          tipo_comida: 'almuerzo',
+          tiempo_preparacion_min: 30,
+          instrucciones: 'Cortar berenjenas, pasar por huevo, empanar y hornear.',
+          userId: null // Public community recipe
+        }
+      });
+
+      await prisma.recipeIngredient.create({
+        data: {
+          recipe_id: recipe.id,
+          ingredient_id: ing.id,
+          cantidad: 200,
+          unidad: 'g'
+        }
+      });
+
+      localPublicRecipeId = recipe.id;
+    });
+
+    it('should return local public recipes when searching', async () => {
+      const res = await request(app)
+        .get('/api/external/search?q=berenjena')
+        .set('Cookie', cookieHeader);
+
+      expect(res.status).toBe(200);
+      expect(res.body.length).toBeGreaterThanOrEqual(1);
+      const localItem = res.body.find(item => item.id === `local-${localPublicRecipeId}`);
+      expect(localItem).toBeDefined();
+      expect(localItem.nombre).toBe('Milanesa de berenjena');
+      expect(localItem.isLocal).toBe(true);
+      expect(localItem.categoria).toBe('Comunidad');
+    });
+
+    it('should return recipe details for local community recipe preview', async () => {
+      const res = await request(app)
+        .get(`/api/external/detail/local-${localPublicRecipeId}`)
+        .set('Cookie', cookieHeader);
+
+      expect(res.status).toBe(200);
+      expect(res.body.nombre).toBe('Milanesa de berenjena');
+      expect(res.body.isLocal).toBe(true);
+      expect(res.body.ingredients.length).toBe(1);
+      expect(res.body.ingredients[0].nombre).toBe('dulce de leche');
+      expect(res.body.instrucciones).toBe('Cortar berenjenas, pasar por huevo, empanar y hornear.');
+    });
+
+    it('should clone the local community recipe to user portfolio when importing', async () => {
+      const res = await request(app)
+        .post('/api/external/import')
+        .set('Cookie', cookieHeader)
+        .send({ externalId: `local-${localPublicRecipeId}` });
+
+      expect(res.status).toBe(201);
+      expect(res.body.nombre).toBe('Milanesa de berenjena');
+      
+      // Verify cloned recipe belongs to the chef user
+      const currentUser = await prisma.user.findUnique({
+        where: { email: 'chef@mealcrafter.com' }
+      });
+
+      const cloned = await prisma.recipe.findFirst({
+        where: {
+          nombre: 'Milanesa de berenjena',
+          userId: currentUser.id
+        },
+        include: {
+          ingredients: true
+        }
+      });
+
+      expect(cloned).toBeDefined();
+      expect(cloned.porciones_base).toBe(2);
+      expect(cloned.ingredients.length).toBe(1);
+    });
+  });
 });
+

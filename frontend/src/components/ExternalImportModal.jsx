@@ -185,7 +185,7 @@ function ExternalImportModal({ isOpen, onClose, onImportSuccess }) {
                     {previewRecipe.nombre}
                   </h3>
                   <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                    Categoría: {previewRecipe.tipo_comida} | Preparación: {previewRecipe.tiempo_preparacion_min} min | {previewRecipe.porciones_base} porciones
+                    Categoría: {previewRecipe.tipo_comida} | Preparación: {previewRecipe.tiempo_preparacion_min} min | {previewRecipe.porciones_base} porciones {previewRecipe.isLocal && <span style={{ marginLeft: '8px', background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: '700' }}>COMUNIDAD LOCAL</span>}
                   </span>
                 </div>
 
@@ -193,7 +193,7 @@ function ExternalImportModal({ isOpen, onClose, onImportSuccess }) {
 
                 <div>
                   <h4 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '10px' }}>
-                    Ingredientes Traducidos:
+                    {previewRecipe.isLocal ? 'Ingredientes:' : 'Ingredientes Traducidos:'}
                   </h4>
                   <ul style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 20px', paddingLeft: '16px', fontSize: '13px', color: 'var(--text-secondary)' }}>
                     {previewRecipe.ingredients.map((ing, idx) => (
@@ -208,7 +208,7 @@ function ExternalImportModal({ isOpen, onClose, onImportSuccess }) {
 
                 <div>
                   <h4 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '10px' }}>
-                    Instrucciones en Español:
+                    {previewRecipe.isLocal ? 'Instrucciones de Preparación:' : 'Instrucciones en Español:'}
                   </h4>
                   <div style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.6', whiteSpace: 'pre-line' }}>
                     {previewRecipe.instrucciones}
@@ -292,8 +292,8 @@ function ExternalImportModal({ isOpen, onClose, onImportSuccess }) {
                         <h4 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '2px', lineBreak: 'anywhere' }}>
                           {meal.nombre}
                         </h4>
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                          {meal.categoria} | {meal.origen}
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {meal.categoria} | {meal.origen} {meal.isLocal && <span style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: '700' }}>LOCAL</span>}
                         </span>
                       </div>
                       <div style={{ display: 'flex', gap: '6px' }}>

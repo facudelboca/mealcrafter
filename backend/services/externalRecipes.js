@@ -1,8 +1,32 @@
 import 'dotenv/config';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load JSON culinary dictionary dynamic mapping and corrections
+const dictPath = path.join(__dirname, '../config/culinaryDictionary.json');
+const dictionary = JSON.parse(fs.readFileSync(dictPath, 'utf8'));
+const UNIT_TRANSLATIONS = dictionary.unitTranslations;
+const corrections = dictionary.corrections;
 
 /**
- * Translates a given text from English to Spanish using MyMemory Translation API
- * Splits longer text into chunks to respect API query limits.
+ * Corrects common literal or bad translations from generic translation engines
+ */
+export function correctTranslation(text) {
+  if (!text) return '';
+  let cleaned = text;
+  for (const item of corrections) {
+    const regex = new RegExp(item.pattern, 'gi');
+    cleaned = cleaned.replace(regex, item.replacement);
+  }
+  return cleaned;
+}
+
+/**
+ * Translates a given text chunk from English to Spanish using MyMemory Translation API
  */
 async function translateChunk(chunk) {
   if (!chunk || !chunk.trim()) return chunk;
@@ -45,38 +69,39 @@ export async function translateText(text) {
   }
 }
 
-const SPANISH_TO_ENGLISH_SEARCH = {
-  'pollo': 'chicken',
-  'carne': 'beef',
-  'lentejas': 'lentil',
-  'pescado': 'fish',
-  'cerdo': 'pork',
-  'pasta': 'pasta',
-  'fideos': 'pasta',
-  'arroz': 'rice',
-  'sopa': 'soup',
-  'ensalada': 'salad',
-  'postre': 'dessert',
-  'tarta': 'pie',
-  'pastel': 'cake',
-  'papas': 'potato',
-  'patatas': 'potato',
-  'verduras': 'vegetable',
-  'vegetales': 'vegetable',
-  'queso': 'cheese',
-  'tomate': 'tomato',
-  'huevo': 'egg',
-  'huevos': 'egg',
-  'pan': 'bread',
-  'mariscos': 'seafood',
-  'camarones': 'shrimp',
-  'limon': 'lemon',
-  'limón': 'lemon'
-};
-
 export async function translateSpanishToEnglish(text) {
   if (!text || !text.trim()) return text;
   const normalized = text.trim().toLowerCase();
+  
+  // Check common search words list
+  const SPANISH_TO_ENGLISH_SEARCH = {
+    'pollo': 'chicken',
+    'carne': 'beef',
+    'lentejas': 'lentil',
+    'pescado': 'fish',
+    'cerdo': 'pork',
+    'pasta': 'pasta',
+    'fideos': 'pasta',
+    'arroz': 'rice',
+    'sopa': 'soup',
+    'ensalada': 'salad',
+    'postre': 'dessert',
+    'tarta': 'pie',
+    'pastel': 'cake',
+    'papas': 'potato',
+    'patatas': 'potato',
+    'verduras': 'vegetable',
+    'vegetales': 'vegetable',
+    'queso': 'cheese',
+    'tomate': 'tomato',
+    'huevo': 'egg',
+    'huevos': 'egg',
+    'pan': 'bread',
+    'mariscos': 'seafood',
+    'camarones': 'shrimp',
+    'limon': 'lemon',
+    'limón': 'lemon'
+  };
   
   if (SPANISH_TO_ENGLISH_SEARCH[normalized]) {
     return SPANISH_TO_ENGLISH_SEARCH[normalized];
@@ -107,76 +132,6 @@ export async function translateList(list) {
     }
     return result;
   }
-}
-
-const UNIT_TRANSLATIONS = {
-  'cups': 'tazas',
-  'cup': 'taza',
-  'tablespoons': 'cucharadas',
-  'tablespoon': 'cucharada',
-  'tbsp': 'cucharada',
-  'tbsps': 'cucharadas',
-  'tblsp': 'cucharada',
-  'tblsps': 'cucharadas',
-  'teaspoons': 'cucharaditas',
-  'teaspoon': 'cucharadita',
-  'tsp': 'cucharadita',
-  'tsps': 'cucharaditas',
-  'cloves': 'dientes',
-  'clove': 'diente',
-  'pinch': 'pizca',
-  'pinches': 'pizcas',
-  'sprinkling': 'pizca',
-  'slices': 'rodajas',
-  'slice': 'rodaja',
-  'small': 'pequeño',
-  'medium': 'mediano',
-  'large': 'grande',
-  'can': 'lata',
-  'cans': 'latas',
-  'bottle': 'botella',
-  'bottles': 'botellas',
-  'package': 'paquete',
-  'packages': 'paquetes',
-  'pack': 'paquete',
-  'packs': 'paquetes',
-  'whole': 'entero',
-  'sprig': 'ramita',
-  'sprigs': 'ramitas',
-  'handful': 'puñado',
-  'handfuls': 'puñados'
-};
-
-/**
- * Corrects common literal or bad translations from generic translation engines
- */
-export function correctTranslation(text) {
-  if (!text) return '';
-  let cleaned = text;
-  
-  const replacements = [
-    { regex: /pollo pegajoso/gi, replacement: 'Pollo Glaseado' },
-    { regex: /baquetas de pollo/gi, replacement: 'patas de pollo' },
-    { regex: /baqueta de pollo/gi, replacement: 'pata de pollo' },
-    { regex: /baquetas/gi, replacement: 'patas de pollo' },
-    { regex: /baqueta/gi, replacement: 'pata de pollo' },
-    { regex: /muslos de pollo/gi, replacement: 'patas de pollo' },
-    { regex: /muslo de pollo/gi, replacement: 'pata de pollo' },
-    { regex: /salsa de soya/gi, replacement: 'salsa de soja' },
-    { regex: /de harina/gi, replacement: 'harina' }, // Fix "de harina" from "flour"
-    { regex: /mostaza de dijon/gi, replacement: 'mostaza Dijon' },
-    { regex: /mostaza dijon/gi, replacement: 'mostaza Dijon' },
-    { regex: /clavo de olor/gi, replacement: 'clavos de olor' },
-    { regex: /clavo de ajo/gi, replacement: 'diente de ajo' },
-    { regex: /clavos de ajo/gi, replacement: 'dientes de ajo' },
-    { regex: /cebolla verde/gi, replacement: 'cebolla de verdeo' },
-    { regex: /cebolla de verdeo/gi, replacement: 'cebolla de verdeo' }
-  ];
-  
-  for (const item of replacements) {
-    cleaned = cleaned.replace(item.regex, item.replacement);
-  }
-  return cleaned;
 }
 
 // Helper to parse strings like "1 1/2 kg", "250g", "1/2 tsp", "4" into { cantidad, unidad }
@@ -309,4 +264,88 @@ export async function getExternalRecipeById(externalId) {
     instrucciones: meal.strInstructions || '',
     ingredients
   };
+}
+
+/**
+ * Translates a complete recipe JSON structure using Gemini API
+ */
+export async function translateRecipeWithGemini(recipe) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY no configurada');
+  }
+
+  const prompt = `Translate the following recipe JSON into Spanish. 
+  Translate:
+  - "nombre" (the recipe name)
+  - "instrucciones" (the step-by-step instructions)
+  - "nombre" inside each object of the "ingredients" list
+  
+  Guidelines:
+  1. Keep all numeric values ("cantidad"), categories ("tipo_comida"), preparation times ("tiempo_preparacion_min"), and JSON keys unchanged.
+  2. Use natural South American Spanish culinary names (e.g. translate "chicken drumsticks/drumsticks" to "patas de pollo", "sticky chicken" to "Pollo Glaseado", "soy sauce" to "salsa de soja").
+  3. Translate and normalize units (e.g. "cups" to "tazas", "tablespoons" to "cucharadas", "teaspoons" to "cucharaditas", "cloves" to "dientes").
+  4. Return ONLY a valid JSON string. No explanations, no markdown formatting.
+  
+  JSON:
+  ${JSON.stringify(recipe)}`;
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        responseMimeType: 'application/json'
+      }
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error en API de Gemini: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!textResponse) {
+    throw new Error('Respuesta vacía de Gemini');
+  }
+
+  // Parse output and clean whitespace
+  const translatedRecipe = JSON.parse(textResponse);
+  return translatedRecipe;
+}
+
+/**
+ * Dynamic Hybrid Translation Orchestrator (Gemini with MyMemory fallback)
+ * @param {Object} recipe - raw recipe in English
+ * @returns {Promise<Object>} - translated recipe in Spanish
+ */
+export async function translateRecipeToSpanish(recipe) {
+  // 1. Try Gemini first if key is configured
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      const translated = await translateRecipeWithGemini(recipe);
+      return translated;
+    } catch (err) {
+      console.error('Gemini translation failed, falling back to MyMemory:', err);
+    }
+  }
+
+  // 2. Fallback to MyMemory batch translation + local corrections dictionary
+  const result = { ...recipe };
+  result.nombre = correctTranslation(await translateText(recipe.nombre));
+  result.instrucciones = correctTranslation(await translateText(recipe.instrucciones));
+  
+  const ingNames = recipe.ingredients.map(ing => ing.nombre);
+  const translatedNames = await translateList(ingNames);
+  result.ingredients = recipe.ingredients.map((ing, idx) => ({
+    ...ing,
+    nombre: correctTranslation(translatedNames[idx] || ing.nombre)
+  }));
+  
+  return result;
 }

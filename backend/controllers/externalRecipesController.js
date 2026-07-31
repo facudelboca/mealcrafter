@@ -1,5 +1,10 @@
 import prisma from '../prismaClient.js';
-import { searchExternalRecipes, getExternalRecipeById, translateText, translateSpanishToEnglish, translateList, correctTranslation } from '../services/externalRecipes.js';
+import { 
+  searchExternalRecipes, 
+  getExternalRecipeById, 
+  translateSpanishToEnglish, 
+  translateRecipeToSpanish 
+} from '../services/externalRecipes.js';
 
 // Re-adapted resolveIngredients helper for external imports
 const resolveIngredients = async (ingredientsInput) => {
@@ -147,9 +152,41 @@ export const searchRecipes = async (req, res, next) => {
     if (!q) {
       return res.status(400).json({ error: 'Parámetro de búsqueda "q" es requerido' });
     }
-    const englishQuery = await translateSpanishToEnglish(q);
-    const results = await searchExternalRecipes(englishQuery);
-    res.json(results);
+
+    const trimmed = q.trim();
+
+    // 1. Search local public community recipes (userId: null)
+    const localPublicRecipes = await prisma.recipe.findMany({
+      where: {
+        userId: null,
+        nombre: {
+          contains: trimmed,
+          mode: 'insensitive'
+        }
+      }
+    });
+
+    const localResults = localPublicRecipes.map(recipe => ({
+      id: `local-${recipe.id}`,
+      nombre: recipe.nombre,
+      imagen: '/p-mealcrafter.jpg', // Community placeholder image
+      categoria: 'Comunidad',
+      origen: 'Local',
+      isLocal: true
+    }));
+
+    // 2. Search external TheMealDB API
+    let externalResults = [];
+    try {
+      const englishQuery = await translateSpanishToEnglish(trimmed);
+      externalResults = await searchExternalRecipes(englishQuery);
+    } catch (err) {
+      console.error('External search lookup failed, returning local-only results:', err);
+    }
+
+    // Merge public local and external recipe results
+    const combinedResults = [...localResults, ...externalResults];
+    res.json(combinedResults);
   } catch (err) {
     next(err);
   }
@@ -162,36 +199,57 @@ export const importRecipe = async (req, res, next) => {
       return res.status(400).json({ error: 'Parámetro "externalId" es requerido' });
     }
 
-    // Get recipe details from service
-    const extRecipe = await getExternalRecipeById(externalId);
+    let recipeDataToImport = null;
 
-    // Translate name, instructions, and ingredient names to Spanish
-    try {
-      extRecipe.nombre = correctTranslation(await translateText(extRecipe.nombre));
-      extRecipe.instrucciones = correctTranslation(await translateText(extRecipe.instrucciones));
-      
-      const ingNames = extRecipe.ingredients.map(ing => ing.nombre);
-      const translatedNames = await translateList(ingNames);
-      extRecipe.ingredients.forEach((ing, index) => {
-        ing.nombre = correctTranslation(translatedNames[index] || ing.nombre);
+    if (String(externalId).startsWith('local-')) {
+      // 1. Local community recipe import
+      const localId = parseInt(String(externalId).replace('local-', ''), 10);
+      const localRecipe = await prisma.recipe.findUnique({
+        where: { id: localId },
+        include: {
+          ingredients: {
+            include: {
+              ingredient: true
+            }
+          }
+        }
       });
-    } catch (transErr) {
-      console.error('Non-blocking translation failure:', transErr);
+
+      if (!localRecipe) {
+        return res.status(404).json({ error: 'Receta de la comunidad no encontrada' });
+      }
+
+      recipeDataToImport = {
+        nombre: localRecipe.nombre,
+        porciones_base: localRecipe.porciones_base,
+        tipo_comida: localRecipe.tipo_comida,
+        tiempo_preparacion_min: localRecipe.tiempo_preparacion_min,
+        instrucciones: localRecipe.instrucciones,
+        ingredients: localRecipe.ingredients.map(ri => ({
+          nombre: ri.ingredient.nombre,
+          cantidad: parseFloat(ri.cantidad),
+          unidad: ri.unidad
+        }))
+      };
+    } else {
+      // 2. TheMealDB external recipe import (with translation)
+      const extRecipe = await getExternalRecipeById(externalId);
+      recipeDataToImport = await translateRecipeToSpanish(extRecipe);
     }
 
     // Resolve ingredients (create dynamic catalog records)
-    const resolvedIngredients = await resolveIngredients(extRecipe.ingredients);
+    const resolvedIngredients = await resolveIngredients(recipeDataToImport.ingredients);
 
     // Create the recipe in database linked to logged-in user
     const newRecipe = await prisma.$transaction(async (tx) => {
       const recipe = await tx.recipe.create({
         data: {
-          nombre: extRecipe.nombre.trim(),
-          porciones_base: extRecipe.porciones_base,
-          tipo_comida: extRecipe.tipo_comida,
-          tiempo_preparacion_min: extRecipe.tiempo_preparacion_min,
-          instrucciones: extRecipe.instrucciones.trim(),
-          userId: req.user.id, // Auth middleware puts authenticated user in req.user
+          nombre: recipeDataToImport.nombre.trim(),
+          porciones_base: recipeDataToImport.porciones_base,
+          tipo_comida: recipeDataToImport.tipo_comida,
+          tiempo_preparacion_min: recipeDataToImport.tiempo_preparacion_min,
+          instrucciones: recipeDataToImport.instrucciones.trim(),
+          userId: req.user.id,
         },
       });
 
@@ -229,26 +287,48 @@ export const getExternalRecipeDetail = async (req, res, next) => {
   try {
     const { id } = req.params;
     if (!id) {
-      return res.status(400).json({ error: 'ID externo de receta es requerido' });
+      return res.status(400).json({ error: 'ID de receta es requerido' });
     }
 
-    const extRecipe = await getExternalRecipeById(id);
-
-    // Translate name, instructions, and ingredients to Spanish for the preview modal
-    try {
-      extRecipe.nombre = correctTranslation(await translateText(extRecipe.nombre));
-      extRecipe.instrucciones = correctTranslation(await translateText(extRecipe.instrucciones));
-      
-      const ingNames = extRecipe.ingredients.map(ing => ing.nombre);
-      const translatedNames = await translateList(ingNames);
-      extRecipe.ingredients.forEach((ing, index) => {
-        ing.nombre = correctTranslation(translatedNames[index] || ing.nombre);
+    if (String(id).startsWith('local-')) {
+      // 1. Local community recipe detail
+      const localId = parseInt(String(id).replace('local-', ''), 10);
+      const localRecipe = await prisma.recipe.findUnique({
+        where: { id: localId },
+        include: {
+          ingredients: {
+            include: {
+              ingredient: true
+            }
+          }
+        }
       });
-    } catch (transErr) {
-      console.error('Non-blocking preview translation failure:', transErr);
-    }
 
-    res.json(extRecipe);
+      if (!localRecipe) {
+        return res.status(404).json({ error: 'Receta de la comunidad no encontrada' });
+      }
+
+      const mappedDetail = {
+        nombre: localRecipe.nombre,
+        porciones_base: localRecipe.porciones_base,
+        tipo_comida: localRecipe.tipo_comida,
+        tiempo_preparacion_min: localRecipe.tiempo_preparacion_min,
+        instrucciones: localRecipe.instrucciones,
+        ingredients: localRecipe.ingredients.map(ri => ({
+          nombre: ri.ingredient.nombre,
+          cantidad: parseFloat(ri.cantidad),
+          unidad: ri.unidad
+        })),
+        isLocal: true
+      };
+
+      return res.json(mappedDetail);
+    } else {
+      // 2. TheMealDB external recipe detail
+      const extRecipe = await getExternalRecipeById(id);
+      const translatedDetail = await translateRecipeToSpanish(extRecipe);
+      return res.json(translatedDetail);
+    }
   } catch (err) {
     next(err);
   }
